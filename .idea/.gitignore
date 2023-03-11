@@ -1,0 +1,4 @@
+# デフォルトの無視対象ファイル
+/workspace.xml
+/modules.xml
+/shelf/

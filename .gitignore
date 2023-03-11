@@ -1,0 +1,15 @@
+# chara file
+*.json
+*.txt
+
+# cache dir
+__pycache__/
+
+# pyinstaller dir
+build/
+dist/
+*.spec
+build.bat
+
+# env file
+.env
