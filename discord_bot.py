@@ -9,10 +9,12 @@ import os
 
 
 def discord_bot():
+    # get api key
     if os.getenv('DISCORD_API_KEY') is None:
         print(" Error : environment variable \"DISCORD_API_KEY\" is not found")
         exit(1)
-    typing_flag = False
+
+    # set bot intents
     intents = discord.Intents.default()
     intents.messages = True
     intents.message_content = True
@@ -27,14 +29,14 @@ def discord_bot():
 
     @client.event
     async def on_message(message):
-        # print("get:"+message.content)
-        # チャンネル管理クラスの作成
-        if not message.channel.id in channel_dict:
+
+        # create and register channel class
+        if message.channel.id not in channel_dict:
             channel_dict[message.channel.id] = chat_channel(myuser=client.user, mychannel=message.channel)
         channel = channel_dict[message.channel.id]
 
-        # メッセージをコマンドとして解釈
-        # decode_params:コマンド一覧
+        # interprets user commands
+        # decode_params:commands list
         p = decode_params("chat",
                           {"a": {"function": channel.chat_answer},
                            "help": {"function": channel.chat_help},
@@ -42,6 +44,8 @@ def discord_bot():
                            "temp": {"function": channel.set_temp,
                                     "need_arguments": {"temp": "float"}},
                            "chara": {"function": channel.character_init,
+                                     "need_arguments": {"name": "str"}},
+                           "convs": {"function": channel.character_init,
                                      "need_arguments": {"name": "str"}}
                            },
                           {"mention": client.user.mention, "function": channel.chat_mention}

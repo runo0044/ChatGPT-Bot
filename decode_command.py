@@ -20,19 +20,19 @@ class decode_params:
     # commands = {command_name:detail_dict}
     # detail_dict = {function:function_name(can async),need_arguments:arguments_dict,optional_arguments:arguments_dict}
     # arguments_dict = {argument_name:type}
-    def __init__(self, command_start, commands, mention, SPLIT_CHAR=False):
+    def __init__(self, command_start, commands, mention, split_char=""):
         self.command_start = command_start
         self.commands = commands
         self.mention = mention["mention"]
         self.mention_func = mention["function"]
-        self.SPLIT_CHAR = SPLIT_CHAR
+        self.split_char = split_char
 
 
 def decode_command(message, params):
     text = message.content
     command_start = params.command_start
     commands = params.commands
-    SPLIT_CHAR = params.SPLIT_CHAR
+    split_char = params.split_char
     mention = params.mention
     mention_func = params.mention_func
 
@@ -71,12 +71,13 @@ def decode_command(message, params):
             # 必須引数の読み込み
             if "need_arguments" in detail_dict:
                 for arg in detail_dict["need_arguments"]:
-                    text = text.lstrip(arg + "=").lstrip(arg + " =").lstrip(" ")
-                    if SPLIT_CHAR == "\n":
+                    text = text.replace(arg + "=", "").replace(arg + " =", "").lstrip()
+                    if split_char == "\n":
                         tmp_texts = text.split("\n", maxsplit=1)
                     else:
                         tmp_texts = text.split(maxsplit=1)
-                    arguments_dict[arg] = decode_argument(arg_type=detail_dict["need_arguments"][arg], string=tmp_texts[0])
+                    arguments_dict[arg] = decode_argument(arg_type=detail_dict["need_arguments"][arg],
+                                                          string=tmp_texts[0])
                     if len(tmp_texts) > 1:
                         text = tmp_texts[1]
                     else:

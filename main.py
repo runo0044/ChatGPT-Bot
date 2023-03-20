@@ -3,7 +3,9 @@ from dotenv import load_dotenv
 
 
 def main():
+    # import .env file
     load_dotenv(override=True)
+
     discord_bot()
 
 

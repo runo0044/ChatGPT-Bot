@@ -1,7 +1,6 @@
-import asyncio
-import ChatGPTAPI
-import threading
 import json
+
+import ChatGPTAPI
 import make_charafile
 from tiktoken_wrapper import num_tokens_from_messages
 
@@ -18,8 +17,10 @@ def get_character_status(name):
     try:
         with open(name + ".json", mode="r", encoding="utf-8") as f:
             text = f.read()
+            print("character file \"json\" is loading")
             return json.loads(text)
-    except:
+    except Exception as e:
+        print(e)
         try:
             make_charafile.set_TARGET(name + ".txt")
             make_charafile.load_chara()
@@ -28,7 +29,7 @@ def get_character_status(name):
                     text = f.read()
                     return json.loads(text)
             except Exception as e:
-                print("character file is not found")
+                print("create character file, but this is broken")
                 return e
 
         except Exception as e:
@@ -75,7 +76,7 @@ class chat_channel:
     async def chat_answer(self):
         if not self.listen:
             return self.mychannel.send("!Error I can't read this channel.")
-        await self.history2message()
+        await self.history2message(use_history=self.use_history)
         try:
             response = await ChatGPTAPI.call_api("gpt-3.5-turbo", self.system_message + self.message, self.temp,
                                                  self.token)
@@ -125,9 +126,9 @@ class chat_channel:
         self.temp = temp
         return self.mychannel.send("!setting temp = " + str(self.temp))
 
-    async def history2message(self):
+    async def history2message(self, use_history: bool):
         self.message = []
-        if self.use_history:
+        if use_history:
             read_limit = 200
         else:
             read_limit = 2
@@ -149,6 +150,7 @@ class chat_channel:
                 else:
                     self.message.append({"role": "user", "content": chat.content})
 
+            len_over = None
             try:
                 len_over = num_tokens_from_messages(self.message) > self.history_tokens
             except Exception as e:
