@@ -1,25 +1,39 @@
-import asyncio
-import time
+import os
+from logging import getLogger, StreamHandler
+
+import coloredlogs
 import discord
 import openai
-import os
+
+import const
+
+logger = getLogger(__name__)
+handler = StreamHandler()
+handler.setLevel("DEBUG")
+logger.addHandler(handler)
+logger.propagate = False
+coloredlogs.install("DEBUG", logger=logger, fmt="%(asctime)s %(levelname)s     %(name)s %(message)s",
+                    field_styles=const.DEFAULT_FIELD_STYLES(), level_styles=const.DEFAULT_LEVEL_STYLES())
 
 
-async def call_api(model="gpt-3.5-turbo",messages = [],temperature=0.5,max_tokens=2000):
+async def call_api(model="gpt-3.5-turbo", messages=None, temperature=0.5, max_tokens=2000):
+    if messages is None:
+        messages = []
+
     if os.getenv('OPENAI_API_KEY') is None:
-        print(" Error : environment variable \"'OPENAI_API_KEY\" is not found")
+        logger.critical(" Error : environment variable \"'OPENAI_API_KEY\" is not found")
         exit(1)
     openai.api_key = os.getenv('OPENAI_API_KEY')
-    print("call_api "+model+","+str(temperature)+","+str(max_tokens))
-    print(messages)
+    logger.info("call_api " + model + "," + str(temperature) + "," + str(max_tokens))
     response = await openai.ChatCompletion.acreate(
-                model=model,
-                messages = messages,
-                temperature=temperature,
-                max_tokens=max_tokens
-            )
-    with open("api_log.txt",mode="a",encoding="utf-8") as f:
-        f.write("api_call at "+discord.utils.utcnow().strftime("%Y: %m/%d %H:%M:%S")+
-                ", use "+str(response["usage"]["total_tokens"])+" tokens\n")
+        model=model,
+        messages=messages,
+        temperature=temperature,
+        max_tokens=max_tokens
+    )
+    with open("api_log.txt", mode="a", encoding="utf-8") as f:
+        f.write("api_call at " + discord.utils.utcnow().strftime("%Y: %m/%d %H:%M:%S") +
+                ", use " + str(response["usage"]["total_tokens"]) + " tokens\n")
+    logger.info("api_call return " + discord.utils.utcnow().strftime("%Y: %m/%d %H:%M:%S") +
+                ", use " + str(response["usage"]["total_tokens"]) + " tokens")
     return response
-

@@ -1,22 +1,15 @@
-import discord
-from chat_channel import chat_channel
-
-
-def chat_help(params):
-    return "help"
-
-
 def decode_argument(arg_type, string):
-    if type == "int":
+    if arg_type == "int":
         return int(string)
-    if type == "float":
+    if arg_type == "float":
         return float(string)
-    if type == "bool":
+    if arg_type == "bool":
         return bool(string)
     return string
 
 
-class decode_params:
+# noinspection PyPep8Naming
+class decodeParams:
     # commands = {command_name:detail_dict}
     # detail_dict = {function:function_name(can async),need_arguments:arguments_dict,optional_arguments:arguments_dict}
     # arguments_dict = {argument_name:type}
@@ -46,7 +39,6 @@ def decode_command(message, params):
         # 受け取るべきコマンドかどうかの判定
         if text.startswith(command_start):
             text = text.lstrip(command_start).lstrip(" ")
-            detail_dict = {}
 
             # コマンドの探索
             for command in commands:
