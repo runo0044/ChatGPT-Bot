@@ -10,7 +10,6 @@ from chatchannel import chatChannel
 from decode_command import decode_command, decodeParams
 import configIo
 
-
 ON_DEBUG = False
 
 
@@ -40,7 +39,8 @@ def discord_bot():
     async def bot_exit():
         if not ON_DEBUG:
             for channel_id in channel_dict:
-                await channel_dict[channel_id].send_message("Bot shut down!")
+                if channel_dict[channel_id].listen:
+                    await channel_dict[channel_id].send_message("!Bot shut down!")
         await client.close()
 
     @client.event
@@ -52,8 +52,9 @@ def discord_bot():
         # create and register channel class
         if message.channel.id not in channel_dict:
             channel_dict[message.channel.id] = chatChannel(my_user=client.user, my_channel=message.channel,
-                                                           listen=configIo.get_config(str(message.channel.id)+"listen"))
-            configIo.set_config(str(message.channel.id)+"listen", channel_dict[message.channel.id].listen)
+                                                           listen=configIo.get_config(
+                                                               str(message.channel.id) + "listen"))
+            configIo.set_config(str(message.channel.id) + "listen", channel_dict[message.channel.id].listen)
         channel = channel_dict[message.channel.id]
 
         # interprets user commands
@@ -66,31 +67,34 @@ def discord_bot():
                                    "need_arguments": {"temp": "float"}},
                           "chara": {"function": channel.character_init,
                                     "need_arguments": {"name": "str"}},
-                          "convs": {"function": channel.character_init,
-                                    "need_arguments": {"name": "str"}},
-                          "exit": {"function": bot_exit}
+                          "conv": {"function": channel.chat_convert},
+                          "setconv": {"function": channel.set_converter,
+                                      "opt_arguments": {"name1": "str", "name2": "str", "name3": "str"}},
+                          "exit": {"function": bot_exit},
+                          "status": {"function": channel.print_status}
                           },
                          {"mention": client.user.mention, "function": channel.chat_mention}
                          )
-        doing = decode_command(message, p)
+        try:
+            doing = decode_command(message, p)
 
-        # コマンドであれば実行
-        if doing["command"]:
-            logger.info(doing["function"])
-            if doing["function"] == bot_exit:
-                await doing["function"]()
-            else:
-                async with message.channel.typing():
-                    result = await doing["function"](**doing["arguments"])
-                    if inspect.iscoroutine(result):
-                        await result
-                    else:
-                        result
+            # コマンドであれば実行
+            if doing["command"]:
+                logger.info(doing["function"])
+                if doing["function"] == bot_exit:
+                    await doing["function"]()
+                else:
+                    async with message.channel.typing():
+                        result = await doing["function"](**doing["arguments"])
+                        if inspect.iscoroutine(result):
+                            await result
+                        else:
+                            result
+        except Exception as e:
+            await channel_dict[message.channel.id].send_message(str(e))
 
     with open("api_log.txt", mode="a", encoding="utf-8") as f:
         f.write("Bot start at " + discord.utils.utcnow().strftime("%Y: %m/%d %H:%M:%S") + "\n")
     client.run(os.getenv('DISCORD_API_KEY'), log_handler=None)
     with open("api_log.txt", mode="a", encoding="utf-8") as f:
         f.write("Bot stop  at " + discord.utils.utcnow().strftime("%Y: %m/%d %H:%M:%S") + "\n")
-
-

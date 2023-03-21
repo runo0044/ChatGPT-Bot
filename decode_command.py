@@ -8,7 +8,6 @@ def decode_argument(arg_type, string):
     return string
 
 
-# noinspection PyPep8Naming
 class decodeParams:
     # commands = {command_name:detail_dict}
     # detail_dict = {function:function_name(can async),need_arguments:arguments_dict,optional_arguments:arguments_dict}
@@ -64,11 +63,29 @@ def decode_command(message, params):
             if "need_arguments" in detail_dict:
                 for arg in detail_dict["need_arguments"]:
                     text = text.replace(arg + "=", "").replace(arg + " =", "").lstrip()
+                    if text == "":
+                        raise ValueError("!Error this command need arguments "+arg)
                     if split_char == "\n":
                         tmp_texts = text.split("\n", maxsplit=1)
                     else:
                         tmp_texts = text.split(maxsplit=1)
                     arguments_dict[arg] = decode_argument(arg_type=detail_dict["need_arguments"][arg],
+                                                          string=tmp_texts[0])
+                    if len(tmp_texts) > 1:
+                        text = tmp_texts[1]
+                    else:
+                        text = ""
+
+            if "opt_arguments" in detail_dict:
+                for arg in detail_dict["opt_arguments"]:
+                    text = text.replace(arg + "=", "").replace(arg + " =", "").lstrip()
+                    if text == "":
+                        break
+                    if split_char == "\n":
+                        tmp_texts = text.split("\n", maxsplit=1)
+                    else:
+                        tmp_texts = text.split(maxsplit=1)
+                    arguments_dict[arg] = decode_argument(arg_type=detail_dict["opt_arguments"][arg],
                                                           string=tmp_texts[0])
                     if len(tmp_texts) > 1:
                         text = tmp_texts[1]

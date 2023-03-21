@@ -30,13 +30,19 @@ class characterStatus:
     """
 
     def __init__(self, system_message, temp=0.5, send_token=1000, receive_token=1000,
-                 messages_preloaded=200, send_user_name=True):
+                 messages_preloaded=200, send_user_name=True, name="def"):
         self.system_message = system_message
         self.temp = temp
         self.send_token = send_token
         self.receive_token = receive_token
         self.messages_preloaded = messages_preloaded
         self.send_user_name = send_user_name
+        self.name = name
+
+    def toString(self):
+        return "name : " + self.name + \
+                "\ntemp : " + str(self.temp) + \
+                "\ntoken : " + str(self.send_token) + " send / " + str(self.receive_token) + " receive"
 
 
 logger = getLogger(__name__)
@@ -60,7 +66,7 @@ def get_character_status(name):
         with open(name + ".json", mode="r", encoding="utf-8") as f:
             text = f.read()
             logger.info("character file " + name + ".json is loading")
-            return characterStatus(**json.loads(text))
+            return characterStatus(**json.loads(text), name=name)
     except Exception as e:
         logger.error(e)
         try:
@@ -69,7 +75,7 @@ def get_character_status(name):
             try:
                 with open(name + ".json", mode="r", encoding="utf-8") as f:
                     text = f.read()
-                    return characterStatus(**json.loads(text))
+                    return characterStatus(**json.loads(text), name=name)
             except Exception as e:
                 logger.error("create character file, but this is broken")
                 logger.error(e)
@@ -92,6 +98,7 @@ class chatChannel:
             configIo.set_config(str(my_channel.id) + "chara", "def")
         self.chara_status = get_character_status(chara_name)
         self.converter_status = []
+        self.use_converter_at_all = False
 
         # sender
         self.message = []
@@ -113,8 +120,17 @@ class chatChannel:
             self.logger.debug("listen load" + str(listen))
 
     async def send_message(self, value: str):
-        if self.listen:
-            await self.my_channel.send(value)
+        await self.my_channel.send(value)
+
+    async def print_status(self):
+        text = "!status\nlisten : " + str(self.listen) + "\ncharacter " + self.chara_status.toString()
+        if len(self.converter_status) == 0:
+            text = text + "\nconverter is None"
+        else:
+            text = text + "\nconverter : "
+            for conv in self.converter_status:
+                text = text + conv.name + " : "
+        return self.my_channel.send(text)
 
     def character_init(self, name: str):
         try:
@@ -126,6 +142,56 @@ class chatChannel:
         except Exception as e:
             self.logger.error(e)
             return self.my_channel.send("!Error character file is not found")
+
+    async def set_converter(self, name1=None, name2=None, name3=None):
+        self.converter_status = []
+        if name1 is not None:
+            self.converter_status.append(get_character_status(name1))
+        if name2 is not None:
+            self.converter_status.append(get_character_status(name2))
+        if name3 is not None:
+            self.converter_status.append(get_character_status(name3))
+        if len(self.converter_status) == 0:
+            return self.my_channel.send("!reset converter")
+        else:
+            text = ""
+            if name1 is not None:
+                text = text + name1
+            if name2 is not None:
+                text = text + " " + name2
+            if name3 is not None:
+                text = text + " " + name3
+            return self.my_channel.send("!set converter "+text)
+
+    async def converting_init(self, text):
+        self.message = []
+        self.message[0] = {"role": "user", "content": text}
+
+    async def __converting__(self, mention=None):
+        for converter in self.converter_status:
+            try:
+                response = await ChatGPTAPI.call_api("gpt-3.5-turbo", converter.system_message + self.message,
+                                                     converter.temp, max_tokens=2000)
+                self.message[0]["content"] = response["choices"][0]["message"]["content"]
+            except Exception as e:
+                self.logger.error(e)
+                return self.my_channel.send("!Error API Call failed\n" + str(e))
+
+        if len(self.converter_status) > 0:
+            text = response["choices"][0]["message"]["content"]
+        else:
+            text = "!Error converter is not setting"
+
+        if mention is not None:
+            text = mention + text
+        return self.my_channel.send(text)
+
+    async def chat_convert(self):
+        if not self.listen:
+            return self.my_channel.send("!Error I can't read this channel. For more information !chat help")
+
+        await self.get_last_message()
+        return await self.__converting__()
 
     async def chat_answer(self):
         if not self.listen:
@@ -141,7 +207,12 @@ class chatChannel:
             text = response["choices"][0]["message"]["content"].split("「", 1)[-1].rstrip("」")
         else:
             text = response["choices"][0]["message"]["content"]
-        return self.my_channel.send(text)
+
+        if self.use_converter_at_all:
+            await self.converting_init(text)
+            return self.__converting__()
+        else:
+            return self.my_channel.send(text)
 
     async def chat_mention(self, message):
         # mention only -> !chat answer
@@ -154,7 +225,13 @@ class chatChannel:
                                                            {"role": "user",
                                                             "content": message.content.replace(self.my_user.mention,
                                                                                                "")}])
-            return self.my_channel.send(message.author.mention + response["choices"][0]["message"]["content"])
+            text = response["choices"][0]["message"]["content"]
+            if self.use_converter_at_all:
+                await self.converting_init(text)
+                return self.__converting__(message.author.mention)
+            else:
+                return self.my_channel.send(text)
+            # return self.my_channel.send(message.author.mention + response["choices"][0]["message"]["content"])
         except Exception as e:
             self.logger.error(e)
             return self.my_channel.send("!Error API Call failed\n" + str(e))
@@ -162,12 +239,16 @@ class chatChannel:
     def chat_help(self):
         return self.my_channel.send(
             "!ChatGPT-API Discord Bot\n"
-            "ver0.4 2023/03/20\n\n"
+            "ver0.5 2023/03/21\n\n"
             "command list \n"
             "!chat a : answer chats based on history.\n"
             "!split : Bot can't read the message history prior to this command.\n"
             "!chat listen : Allow or not allow this channel to be read.\n"
             "!chat chara : import character file.\n"
+            "!chat setconv : import converter file.(can chain 3 file)\n"
+            "!chat conv : convert just before message\n"
+            "!chat status : print channel status\n"
+            "!chat exit : exit bot\n"
             "@mention : answer chats based on history.if you include a question, Bot answer a question.")
 
     def chat_listen(self):
@@ -183,10 +264,12 @@ class chatChannel:
         self.chara_status.temp = temp
         return self.my_channel.send("!setting temp = " + str(self.chara_status.temp))
 
-    async def history2message(self):
+    async def history2message(self, limit=None):
+        if limit is None:
+            limit = self.chara_status.messages_preloaded
         self.message = []
         self.chat_history = \
-            [message async for message in self.my_channel.history(limit=self.chara_status.messages_preloaded)]
+            [message async for message in self.my_channel.history(limit=limit)]
 
         for chat in self.chat_history:
             if chat.content == "!split":
@@ -215,3 +298,24 @@ class chatChannel:
             self.logger.info("read chat history : " + self.message[0]["content"] + " ~ " + self.message[-1]["content"])
         elif (len(self.message)) == 1:
             self.logger.info("read chat history : " + self.message[0]["content"])
+
+    async def get_last_message(self):
+        self.message = []
+        self.chat_history = \
+            [message async for message in self.my_channel.history(limit=50)]
+
+        for chat in self.chat_history:
+            if chat.content.startswith("!"):
+                continue
+            elif chat.content.startswith("<@"):
+                continue
+            elif chat.author == self.my_user:
+                self.message.append({"role": "user", "content": chat.content})
+                break
+            elif chat.author.bot:
+                continue
+            else:
+                self.message.append({"role": "user", "content": chat.content})
+                break
+
+        self.logger.info("read chat history : " + self.message[0]["content"])
