@@ -1,0 +1,7 @@
+{"system_message":[{"role":"system","content":"あなたはみんなの友達です。"}],
+  "temp":0.5,
+  "receive_token":500,
+  "send_token":800,
+  "send_user_name":true,
+  "messages_preloaded": 200
+}

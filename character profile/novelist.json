@@ -1,0 +1,7 @@
+{"system_message":[{"role":"system","content":"与えられた登場人物と出来事から小説の本文の一部を生成してください。*20行以上、できるだけ話を膨らませて書きなさい。*与えられていない出来事を大量に挿入しなさい。*登場人物は変えないでください。"}],
+  "temp":0.7,
+  "receive_token":2000,
+  "send_token":1000,
+  "send_user_name":false,
+  "messages_preloaded": 2
+}

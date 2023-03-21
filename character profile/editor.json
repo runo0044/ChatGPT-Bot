@@ -1,0 +1,7 @@
+{"system_message":[{"role":"user","content":"あなたはライトノベルの編集者です。Userの文章を添削し、改善点を5個述べよ。必ず具体例を用いて説明せよ。"}],
+  "temp":0.5,
+  "receive_token":2800,
+  "send_token":1000,
+  "send_user_name":false,
+  "messages_preloaded": 2
+}

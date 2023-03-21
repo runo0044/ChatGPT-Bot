@@ -1,9 +1,10 @@
-# chara file
-*.json
-*.txt
-
 # cache dir
 __pycache__/
 
 # env file
 .env
+config.json
+
+# log file
+api_response_log/*.json
+api_log.txt

@@ -63,17 +63,17 @@ def get_character_status(name):
     if name is None:
         name = "def"
     try:
-        with open(name + ".json", mode="r", encoding="utf-8") as f:
+        with open("character profile/" + name + ".json", mode="r", encoding="utf-8") as f:
             text = f.read()
             logger.info("character file " + name + ".json is loading")
             return characterStatus(**json.loads(text), name=name)
     except Exception as e:
         logger.error(e)
         try:
-            make_charafile.set_TARGET(name + ".txt")
+            make_charafile.set_TARGET("character profile/" + name + ".txt")
             make_charafile.load_chara()
             try:
-                with open(name + ".json", mode="r", encoding="utf-8") as f:
+                with open("character profile/" + name + ".json", mode="r", encoding="utf-8") as f:
                     text = f.read()
                     return characterStatus(**json.loads(text), name=name)
             except Exception as e:

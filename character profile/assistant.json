@@ -1,0 +1,7 @@
+{"system_message":[{"role":"system","content":"あなたは役に立つアシスタントです。"}],
+  "temp":0.5,
+  "receive_token":1500,
+  "send_token":1000,
+  "send_user_name":false,
+  "messages_preloaded": 200
+}
