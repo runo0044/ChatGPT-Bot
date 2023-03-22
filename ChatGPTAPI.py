@@ -17,7 +17,7 @@ coloredlogs.install("DEBUG", logger=logger, fmt="%(asctime)s %(levelname)s     %
                     field_styles=const.DEFAULT_FIELD_STYLES(), level_styles=const.DEFAULT_LEVEL_STYLES())
 
 
-async def call_api(model="gpt-3.5-turbo", messages=None, temperature=0.5, max_tokens=2000):
+async def call_api(model="gpt-3.5-turbo", messages=None, temperature=0.5, max_tokens=1800):
     if messages is None:
         messages = []
 

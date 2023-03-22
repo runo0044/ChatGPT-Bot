@@ -144,28 +144,33 @@ class chatChannel:
             return self.my_channel.send("!Error character file is not found")
 
     async def set_converter(self, name1=None, name2=None, name3=None):
-        self.converter_status = []
-        if name1 is not None:
-            self.converter_status.append(get_character_status(name1))
-        if name2 is not None:
-            self.converter_status.append(get_character_status(name2))
-        if name3 is not None:
-            self.converter_status.append(get_character_status(name3))
-        if len(self.converter_status) == 0:
-            return self.my_channel.send("!reset converter")
-        else:
-            text = ""
+        try:
+            self.converter_status = []
             if name1 is not None:
-                text = text + name1
+                self.converter_status.append(get_character_status(name1))
             if name2 is not None:
-                text = text + " " + name2
+                self.converter_status.append(get_character_status(name2))
             if name3 is not None:
-                text = text + " " + name3
-            return self.my_channel.send("!set converter "+text)
+                self.converter_status.append(get_character_status(name3))
+            if len(self.converter_status) == 0:
+                self.use_converter_at_all = False
+                return self.my_channel.send("!reset converter")
+            else:
+                text = ""
+                if name1 is not None:
+                    text = text + name1
+                if name2 is not None:
+                    text = text + " " + name2
+                if name3 is not None:
+                    text = text + " " + name3
+                return self.my_channel.send("!set converter "+text)
+        except Exception as e:
+            self.logger.error(e)
+            self.my_channel.send("!Error " + str(e))
 
     async def converting_init(self, text):
         self.message = []
-        self.message[0] = {"role": "user", "content": text}
+        self.message.append({"role": "user", "content": text})
 
     async def __converting__(self, mention=None):
         for converter in self.converter_status:
@@ -210,7 +215,7 @@ class chatChannel:
 
         if self.use_converter_at_all:
             await self.converting_init(text)
-            return self.__converting__()
+            return await self.__converting__()
         else:
             return self.my_channel.send(text)
 
@@ -228,7 +233,7 @@ class chatChannel:
             text = response["choices"][0]["message"]["content"]
             if self.use_converter_at_all:
                 await self.converting_init(text)
-                return self.__converting__(message.author.mention)
+                return await self.__converting__(message.author.mention)
             else:
                 return self.my_channel.send(text)
             # return self.my_channel.send(message.author.mention + response["choices"][0]["message"]["content"])
@@ -259,6 +264,15 @@ class chatChannel:
             self.listen = True
             configIo.set_config(str(self.my_channel.id) + "listen", True)
         return self.my_channel.send("!setting listen = " + str(self.listen))
+
+    def chat_convert_all(self):
+        if self.use_converter_at_all:
+            self.use_converter_at_all = False
+        elif len(self.converter_status) > 0:
+            self.use_converter_at_all = True
+        else:
+            return self.my_channel.send("!Error converter is None")
+        return self.my_channel.send("!setting use_converter_at_all = " + str(self.use_converter_at_all))
 
     def set_temp(self, temp: float):
         self.chara_status.temp = temp

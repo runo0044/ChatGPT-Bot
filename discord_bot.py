@@ -70,6 +70,7 @@ def discord_bot():
                           "conv": {"function": channel.chat_convert},
                           "setconv": {"function": channel.set_converter,
                                       "opt_arguments": {"name1": "str", "name2": "str", "name3": "str"}},
+                          "setallconv": {"function": channel.chat_convert_all},
                           "exit": {"function": bot_exit},
                           "status": {"function": channel.print_status}
                           },
